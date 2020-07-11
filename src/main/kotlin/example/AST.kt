@@ -7,19 +7,19 @@ class AstFile(range: IntRange, val classes: List<Clazz>) : AstNode(range) {
 
 class Clazz(range: IntRange, val name: String?, val functions: List<Function>) : AstNode(range)
 
-class Function(val name: String, val stmts: List<Stmt>, val typeElement: TypeElement) : AstNode()
+class Function(range: IntRange, val name: String, val stmts: List<Stmt>, val typeElement: TypeElement) : AstNode(range)
 
-sealed class Stmt : AstNode()
+sealed class Stmt(range: IntRange) : AstNode(range)
 
-class ExprStmt(val expr: Expr) : Stmt()
+class ExprStmt(range: IntRange, val expr: Expr) : Stmt(range)
 
-class BlockStmt(val stmts: List<Stmt>) : Stmt()
+class BlockStmt(range: IntRange, val stmts: List<Stmt>) : Stmt(range)
 
-class IfStmt(val condition: Expr, val thenBlock: BlockStmt, val elseBlock: BlockStmt) : Stmt()
+class IfStmt(range: IntRange, val condition: Expr, val thenBlock: BlockStmt, val elseBlock: BlockStmt) : Stmt(range)
 
-sealed class Expr : AstNode()
+sealed class Expr(range: IntRange) : AstNode(range)
 
-class BinExpr(val left: Expr, val right: Expr, val op: BinOp) : Expr()
+class BinExpr(range: IntRange, val left: Expr, val right: Expr, val op: BinOp) : Expr(range)
 
 enum class BinOp {
     Add,
@@ -28,9 +28,9 @@ enum class BinOp {
     Div
 }
 
-class IntLiteral(val value: Int) : Expr()
-class StringLiteral(val value: String) : Expr()
+class IntLiteral(range: IntRange, val value: Int) : Expr(range)
+class StringLiteral(range: IntRange, val value: String) : Expr(range)
 
-sealed class TypeElement : AstNode()
+sealed class TypeElement(range: IntRange) : AstNode(range)
 
-object IntTypeElement : TypeElement()
+class IntTypeElement(range: IntRange) : TypeElement(range)

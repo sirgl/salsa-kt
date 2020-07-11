@@ -33,21 +33,39 @@ class Parser(
             advance()
         } else {
             parseError("'{' expected")
-            // TODO better to recover until function start, field start or '}'
         }
 
-        TODO()
+        val functions = ArrayList<Function>()
+        while (true) {
+            if (at(TokenType.Fun)) {
+                functions.add(parseFunction())
+            } else {
+                recoverUntil(TokenType.RPar, "Function expected")
+                break
+            }
+        }
+        if (!at(TokenType.RPar)) {
+            parseError("'}' expected")
+        }
+
+        return Clazz(clazz.finish(), name, functions)
     }
 
     private fun parseFunction() : Function {
         assert(at(TokenType.Fun))
         val function = mark()
         advance()
-        tokenTextOrRecover(TokenType.LPar, "Function name expected")
+        val name = tokenTextOrRecover(TokenType.LPar, "Function name expected")
+
+
+
 
         TODO()
     }
 
+    private fun parseStmt() : Stmt {
+
+    }
 
     private fun tokenTextOrRecover(recoverUntil: TokenType, errorText: String): String? {
         return if (at(TokenType.Id)) {
@@ -57,6 +75,13 @@ class Parser(
         } else {
             recoverUntil(recoverUntil, errorText)
             null
+        }
+    }
+
+    private fun recoverUntil(tokenTypes: Set<TokenType>, errorText: String) {
+        parseError(errorText)
+        while (token(0).type !in tokenTypes || !atEnd()) {
+            advance()
         }
     }
 
