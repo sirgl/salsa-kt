@@ -3,11 +3,13 @@ package salsa.impl
 import salsa.BasicQueryDb
 import salsa.Query
 import salsa.DbRuntime
+import salsa.QueryDb
+import salsa.transient.TransientBasicQuery
 
 class BasicQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query: Query<P, R>) : BasicQueryDb<P, R> {
     private val inputs: HashMap<P, Memoized<R>> = HashMap()
 
-    override fun eval(parameters: P): R {
+    override operator fun get(parameters: P) : R {
         runtime.addAsDependency(this, parameters)
         return (getMemoized(parameters)).value
     }
@@ -26,6 +28,10 @@ class BasicQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query:
 
     override fun changed(parameters: P): Long {
         return getMemoized(parameters).createdAt
+    }
+
+    override fun forkTransient(): QueryDb<P, R> {
+        return TransientBasicQuery(this)
     }
 }
 

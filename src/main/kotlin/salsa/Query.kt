@@ -1,6 +1,12 @@
 package salsa
 
-data class QueryKey<P, R>(val name: String)
+data class QueryKey<P, R>(val name: String) {
+    @Suppress("UNCHECKED_CAST")
+    fun cast(db: QueryDb<*, *>) : QueryDb<P, R>? {
+        if (db.query.key == this) return db as QueryDb<P, R>
+        return null
+    }
+}
 
 interface Query<P, R> {
     val key: QueryKey<P, R>

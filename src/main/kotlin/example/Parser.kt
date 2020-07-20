@@ -16,10 +16,15 @@ class Parser(
         skipSpaces()
         val file = mark()
         val classes = ArrayList<Clazz>()
-        // TODO error handling, now we just stop if at top level is not class
-        while (at(TokenType.Class)) {
-            classes.add(parseClass())
-        }
+        try {
+            while (at(TokenType.Class)) {
+                classes.add(parseClass())
+            }
+            if (!atEnd()) {
+                parseError("Class expected")
+                unparseable()
+            }
+        } catch (e: TmpParseException) {}
         return AstFile(file.finish(), classes)
     }
 
@@ -56,15 +61,11 @@ class Parser(
         val function = mark()
         advance()
         val name = tokenTextOrRecover(TokenType.LPar, "Function name expected")
-
-
-
-
-        TODO()
+        unparseable()
     }
 
     private fun parseStmt() : Stmt {
-
+        unparseable()
     }
 
     private fun tokenTextOrRecover(recoverUntil: TokenType, errorText: String): String? {
@@ -128,6 +129,11 @@ class Parser(
         return position >= tokens.size
     }
 }
+
+fun unparseable() : Nothing = throw TmpParseException()
+
+// Just to speed up parser construction, not to bother about parser recovery
+class TmpParseException : RuntimeException()
 
 private class Marker(val start: Int, val parser: Parser) {
     fun finish() : IntRange {

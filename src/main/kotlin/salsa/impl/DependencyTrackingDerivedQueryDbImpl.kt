@@ -11,7 +11,8 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
 ) : QueryDb<P, R> {
     private val cache: HashMap<P, ResultInfo<R>> = HashMap()
 
-    override fun eval(parameters: P): R {
+    override operator fun get(parameters: P) : R {
+        // TODO better to use some common logic here!
         checkForCycle()
         runtime.addAsDependency(this, parameters)
         val info = cache.computeIfAbsent(parameters, { this.executeQuery(it) })
@@ -53,6 +54,10 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
     override fun changed(parameters: P): Long {
         val resultInfo = cache[parameters] ?: error("Changed must be called only on computed query parameters")
         return resultInfo.changedAtRevision
+    }
+
+    override fun forkTransient(): QueryDb<P, R> {
+        TODO("Not yet implemented")
     }
 }
 

@@ -12,7 +12,7 @@ class UnstableDerivedQueryDbImpl<P, R>(private val runtime: DbRuntime, override 
     private val cache: HashMap<P, R> = HashMap()
     private var revision: Long = runtime.revision
 
-    override fun eval(parameters: P): R {
+    override operator fun get(parameters: P) : R {
         runtime.addAsDependency(this, parameters)
         if (revision != runtime.revision) {
             revision = runtime.revision
@@ -23,5 +23,9 @@ class UnstableDerivedQueryDbImpl<P, R>(private val runtime: DbRuntime, override 
 
     override fun changed(parameters: P): Long {
         return runtime.revision
+    }
+
+    override fun forkTransient(): QueryDb<P, R> {
+        TODO("Not yet implemented")
     }
 }

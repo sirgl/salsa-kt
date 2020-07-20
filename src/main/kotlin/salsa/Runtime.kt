@@ -39,6 +39,12 @@ interface DbRuntime {
      * Remove everything not reachable from the current revision
      */
     fun gc()
+
+    // TODO maintain invariant, that having transient forks you can't change base inputs (or it immediately interrupts forked so it can't observe changed input)
+    /**
+     *
+     */
+    fun forkTransient() : DbRuntime
 }
 
 /**

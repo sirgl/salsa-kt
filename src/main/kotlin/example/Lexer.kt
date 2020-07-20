@@ -2,6 +2,7 @@ package example
 
 import salsa.DerivedQuery
 import salsa.QueryDb
+import salsa.QueryDbProvider
 import salsa.QueryKey
 
 fun tokenize(text: String) : List<Token> {
@@ -118,13 +119,5 @@ class Lexer(private val text: String) {
             if (!cond(ch)) return
             advance()
         }
-    }
-}
-
-class TokensQuery(private val filesDb: QueryDb<FileId, String>) : DerivedQuery<FileId, List<Token>> {
-    override val key: QueryKey<FileId, List<Token>> = QueryKey("tokens")
-
-    override fun doQuery(params: FileId): List<Token> {
-        return tokenize(filesDb.eval(params))
     }
 }
