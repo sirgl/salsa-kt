@@ -17,7 +17,7 @@ class BaseQueryDbTest {
         q1Db.set(1, "1")
         q1Db.set(2, "2")
         assertEquals(runtime.revision, 2)
-        assertEquals(q1Db.eval(1), "1")
+        assertEquals(q1Db[1], "1")
         assertEquals(q1Db.eval(2), "2")
         q1Db.set(1, "new")
         assertEquals(runtime.revision, 3)
@@ -31,9 +31,11 @@ class BaseQueryDbTest {
         val file1 = 1
         val file2 = 2
 
-        // revision R0
-        fileTextQueryDb[file1] = "class A {}" // revision R0 + 1
-        fileTextQueryDb[file1] = "class B {}" // revision R0 + 2
-        fileTextQueryDb[file2] = "class Other {}" // revision R0 + 3
+        // global revision R0
+        fileTextQueryDb[file1] = "class A {}" // global revision R0 + 1, file1 changedAt R0 + 1
+        fileTextQueryDb[file1] = "class B {}" // global revision R0 + 2, file1 changedAt R0 + 2
+        fileTextQueryDb[file2] = "class Other {}" // global revision R0 + 3,
+        // file1 changedAt R0 + 2
+        // file2 changedAt R0 + 3
     }
 }

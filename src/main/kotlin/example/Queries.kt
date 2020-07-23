@@ -23,7 +23,7 @@ class TokensQuery(dbProvider: QueryDbProvider) : DerivedQuery<FileId, List<Token
     }
 }
 
-private class AstQuery(dbProvider: QueryDbProvider) : DerivedQuery<FileId, Pair<AstFile, List<ParseError>>> {
+class AstQuery(dbProvider: QueryDbProvider) : DerivedQuery<FileId, Pair<AstFile, List<ParseError>>> {
     override val key: QueryKey<FileId, Pair<AstFile, List<ParseError>>>
         get() = QueryKeys.AST
 

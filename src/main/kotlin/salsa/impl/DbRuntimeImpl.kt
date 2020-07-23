@@ -38,6 +38,10 @@ class DbRuntimeImpl : DbRuntime {
         TODO("Not yet implemented")
     }
 
+    override fun forkTransient(): DbRuntime {
+        TODO("Not yet implemented")
+    }
+
     private fun getQueryFrame(): QueryFrame<*, *>? = executionStack.peekFirst()
 }
 

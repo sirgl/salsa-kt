@@ -22,9 +22,9 @@ class DerivedQueryDbTest {
         q1Db.set(1, "1")
         q2Db.set(1, "2")
         val concat: QueryDb<Pair<Int, Int>, String> = DependencyTrackingDerivedQueryDbImpl(runtime, ConcatQuery(q1Db, q2Db))
-        assertEquals("12", concat.eval(1 to 1))
+        assertEquals("12", concat[1 to 1])
         q1Db.set(1, "3")
-        assertEquals("32", concat.eval(1 to 1))
+        assertEquals("32", concat[1 to 1])
     }
 
     @Test
@@ -37,10 +37,10 @@ class DerivedQueryDbTest {
         q1Db.set(1, 10)
         q2Db.set(1, 20)
         val sum: QueryDb<Pair<Int, Int>, CountedInt> = DependencyTrackingDerivedQueryDbImpl(runtime, SumQuery(q1Db, q2Db))
-        val sum1 = sum.eval(1 to 1)
+        val sum1 = sum[1 to 1]
         q1Db.set(1, 5)
         q2Db.set(1, 25)
-        val sum2 = sum.eval(1 to 1)
+        val sum2 = sum[1 to 1]
         assertSame(sum1, sum2)
     }
 }
@@ -51,8 +51,8 @@ class ConcatQuery(private val q1: QueryDb<Int, String>, private val q2: QueryDb<
         get() = QueryKey("concat")
 
     override fun doQuery(params: Pair<Int, Int>): String {
-        val value1 = q1.eval(params.first)
-        val value2 = q2.eval(params.first)
+        val value1 = q1[params.first]
+        val value2 = q2[params.first]
         return value1 + value2
     }
 }
@@ -80,6 +80,6 @@ class SumQuery(val q1: QueryDb<Int, Int>, val q2: QueryDb<Int, Int>) :
         QueryKey("sum")
 
     override fun doQuery(params: Pair<Int, Int>): CountedInt {
-        return CountedInt(q1.eval(params.first) + q2.eval(params.second))
+        return CountedInt(q1[params.first] + q2[params.second])
     }
 }
