@@ -23,9 +23,9 @@ interface QueryDbProvider {
     fun <P, R> getQueryDb(key: QueryKey<P, R>) : QueryDb<P, R>
 }
 
-interface BasicQueryDb<P, R> : QueryDb<P, R> {
+interface BaseQueryDb<P, R> : QueryDb<P, R> {
     // TODO can't set it during executing another query (or we are inside a query)
     operator fun set(params: P, value: R)
 
-    override fun forkTransient() : BasicQueryDb<P, R>
+    override fun forkTransient() : BaseQueryDb<P, R>
 }

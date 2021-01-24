@@ -1,15 +1,15 @@
 package salsa.transient
 
-import salsa.BasicQueryDb
+import salsa.BaseQueryDb
 import salsa.DbRuntime
 import salsa.Query
 import salsa.QueryDb
 import salsa.impl.MemoizedBasicInput
 
-class TransientBasicQueryDb<P, R>(
+class TransientBaseQueryDb<P, R>(
     private val runtime: DbRuntime,
     private val base: QueryDb<P, R>
-) : BasicQueryDb<P, R> {
+) : BaseQueryDb<P, R> {
     private val overwritten: MutableMap<P, MemoizedBasicInput<R>> = HashMap()
 
     override val query: Query<P, R>
@@ -24,8 +24,8 @@ class TransientBasicQueryDb<P, R>(
         TODO("Not yet implemented")
     }
 
-    override fun forkTransient(): BasicQueryDb<P, R> {
-        return TransientBasicQueryDb(runtime, this)
+    override fun forkTransient(): BaseQueryDb<P, R> {
+        return TransientBaseQueryDb(runtime, this)
     }
 
     override fun set(params: P, value: R) {

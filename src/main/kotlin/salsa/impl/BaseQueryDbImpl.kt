@@ -1,11 +1,11 @@
 package salsa.impl
 
-import salsa.BasicQueryDb
+import salsa.BaseQueryDb
 import salsa.Query
 import salsa.DbRuntime
-import salsa.transient.TransientBasicQueryDb
+import salsa.transient.TransientBaseQueryDb
 
-class BasicQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query: Query<P, R>) : BasicQueryDb<P, R> {
+class BaseQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query: Query<P, R>) : BaseQueryDb<P, R> {
     private val inputs: HashMap<P, MemoizedBasicInput<R>> = HashMap()
 
     override operator fun get(parameters: P) : R {
@@ -29,8 +29,8 @@ class BasicQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query:
         return getMemoized(parameters).createdAt
     }
 
-    override fun forkTransient(): BasicQueryDb<P, R> {
-        return TransientBasicQueryDb(runtime, this)
+    override fun forkTransient(): BaseQueryDb<P, R> {
+        return TransientBaseQueryDb(runtime, this)
     }
 }
 

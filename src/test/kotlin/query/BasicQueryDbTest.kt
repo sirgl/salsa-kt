@@ -2,7 +2,7 @@ package query
 
 import salsa.BasicQuery
 import salsa.QueryKey
-import salsa.impl.BasicQueryDbImpl
+import salsa.impl.BaseQueryDbImpl
 import salsa.impl.DbRuntimeImpl
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -12,7 +12,7 @@ class BaseQueryDbTest {
     fun testBasic() {
         val q1 = BasicQuery<Int, String>(QueryKey("q1"))
         val runtime = DbRuntimeImpl()
-        val q1Db = BasicQueryDbImpl(runtime, q1)
+        val q1Db = BaseQueryDbImpl(runtime, q1)
         assertEquals(runtime.revision, 0)
         q1Db[1] = "1"
         q1Db[2] = "2"

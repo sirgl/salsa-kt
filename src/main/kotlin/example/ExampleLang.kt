@@ -1,7 +1,7 @@
 package example
 
 import salsa.*
-import salsa.impl.BasicQueryDbImpl
+import salsa.impl.BaseQueryDbImpl
 import salsa.impl.DbRuntimeImpl
 import salsa.impl.DependencyTrackingDerivedQueryDbImpl
 import salsa.impl.QueryDbProviderImpl
@@ -23,7 +23,7 @@ interface SyntaxQueryGroup {
 
 class SyntaxQueryGroupImpl(runtime: DbRuntime) : SyntaxQueryGroup {
     private val dbProvider = QueryDbProviderImpl()
-    private val fileDb: BasicQueryDb<FileId, String> = BasicQueryDbImpl(runtime, fileQuery)
+    private val fileDb: BaseQueryDb<FileId, String> = BaseQueryDbImpl(runtime, fileQuery)
     init {
         dbProvider.register(fileDb)
     }
@@ -63,7 +63,7 @@ class SyntaxQueryGroupImpl(runtime: DbRuntime) : SyntaxQueryGroup {
 }
 
 class TransientSyntaxQueryGroup(
-    fileDb: BasicQueryDb<FileId, String>,
+    fileDb: BaseQueryDb<FileId, String>,
     tokensDb: QueryDb<FileId, List<Token>>,
     astDb: QueryDb<FileId, Pair<AstFile, List<ParseError>>>
 ) : SyntaxQueryGroup {

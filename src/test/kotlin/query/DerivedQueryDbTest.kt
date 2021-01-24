@@ -4,7 +4,7 @@ import salsa.BasicQuery
 import salsa.DerivedQuery
 import salsa.QueryDb
 import salsa.QueryKey
-import salsa.impl.BasicQueryDbImpl
+import salsa.impl.BaseQueryDbImpl
 import salsa.impl.DbRuntimeImpl
 import salsa.impl.DependencyTrackingDerivedQueryDbImpl
 import org.junit.Test
@@ -16,9 +16,9 @@ class DerivedQueryDbTest {
     fun testQueryChangesAfterInputsChanged() {
         val runtime = DbRuntimeImpl()
         val q1 = BasicQuery<Int, String>(QueryKey("q1"))
-        val q1Db = BasicQueryDbImpl(runtime, q1)
+        val q1Db = BaseQueryDbImpl(runtime, q1)
         val q2 = BasicQuery<Int, String>(QueryKey("q2"))
-        val q2Db = BasicQueryDbImpl(runtime, q2)
+        val q2Db = BaseQueryDbImpl(runtime, q2)
         q1Db[1] = "1"
         q2Db[1] = "2"
         val concat: QueryDb<Pair<Int, Int>, String> = DependencyTrackingDerivedQueryDbImpl(runtime, ConcatQuery(q1Db, q2Db))
@@ -31,9 +31,9 @@ class DerivedQueryDbTest {
     fun testDerivedNotUpdatedIfResultTheSame() {
         val runtime = DbRuntimeImpl()
         val q1 = BasicQuery<Int, Int>(QueryKey("q1"))
-        val q1Db = BasicQueryDbImpl(runtime, q1)
+        val q1Db = BaseQueryDbImpl(runtime, q1)
         val q2 = BasicQuery<Int, Int>(QueryKey("q2"))
-        val q2Db = BasicQueryDbImpl(runtime, q2)
+        val q2Db = BaseQueryDbImpl(runtime, q2)
         q1Db[1] = 10
         q2Db[1] = 20
         val sum: QueryDb<Pair<Int, Int>, CountedInt> = DependencyTrackingDerivedQueryDbImpl(runtime, SumQuery(q1Db, q2Db))
