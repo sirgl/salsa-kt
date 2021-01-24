@@ -2,7 +2,7 @@ package salsa
 
 
 /**
- * Runtime for the database, stores revision counter and frame stack
+ * Runtime for the database, stores revision counter and [Frame] stack
  */
 interface DbRuntime {
     /**

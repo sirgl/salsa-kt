@@ -6,6 +6,14 @@ package salsa
  */
 interface QueryDb<P, R> {
     val query: Query<P, R>
+
+    /**
+     * Computes or returns previously recorded value.
+     *
+     * Implementations:
+     * Should ensure that there is no cycle.
+     * Before returning the result it must set in runtime maximal changedAt revision that was touched during the computation.
+     */
     operator fun get(parameters: P) : R
     fun changed(parameters: P) : Long
     fun forkTransient() : QueryDb<P, R>

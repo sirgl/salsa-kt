@@ -18,19 +18,24 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
         val info = cache.computeIfAbsent(parameters, { this.executeQuery(it) })
         val verifiedAt = info.verifiedAtRevision
         val currentRevision = runtime.revision
-        if (verifiedAt == currentRevision) {
+        if (verifiedAt == currentRevision) { // just computed the value, no need to validate
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
             return info.result
         }
+        // checking whether we can reuse deps or not
         if (info.dependencies.all { it.changed() < verifiedAt }) {
-            // no dependencies changed since last check, whether we can reuse deps or not
+            // no dependencies changed since last check
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
             info.verifiedAtRevision = currentRevision
             return info.result
         }
+        // Some of the dependencies were changed, need to recompute
         val newInfo = executeQuery(parameters)
+
         if (newInfo.result == info.result) {
+            // Despite the dependencies are changed, the result of current computation is the same. No need to update cache
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
+            info.verifiedAtRevision = currentRevision
             return info.result
         }
         cache[parameters] = newInfo

@@ -99,8 +99,8 @@ class TransientSyntaxQueryGroup(
 fun main() {
     val syntaxQueryGroup: SyntaxQueryGroup = SyntaxQueryGroupImpl(DbRuntimeImpl())
     val runtime = DbRuntimeImpl()
-//    syntaxQueryGroup.forkTransient()
-//        .setText(FileId(10), "asdsa")
+    syntaxQueryGroup.forkTransient()
+        .setText(FileId(10), "asdsa")
 //    val fileDb: BasicQueryDb<FileId, String> = BasicQueryDbImpl(runtime, fileQuery)
 //    val file = FileId(10)
 //    fileDb.set(file, "class A : Base { x : Int }")

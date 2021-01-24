@@ -19,11 +19,11 @@ class DerivedQueryDbTest {
         val q1Db = BasicQueryDbImpl(runtime, q1)
         val q2 = BasicQuery<Int, String>(QueryKey("q2"))
         val q2Db = BasicQueryDbImpl(runtime, q2)
-        q1Db.set(1, "1")
-        q2Db.set(1, "2")
+        q1Db[1] = "1"
+        q2Db[1] = "2"
         val concat: QueryDb<Pair<Int, Int>, String> = DependencyTrackingDerivedQueryDbImpl(runtime, ConcatQuery(q1Db, q2Db))
         assertEquals("12", concat[1 to 1])
-        q1Db.set(1, "3")
+        q1Db[1] = "3"
         assertEquals("32", concat[1 to 1])
     }
 
@@ -34,12 +34,12 @@ class DerivedQueryDbTest {
         val q1Db = BasicQueryDbImpl(runtime, q1)
         val q2 = BasicQuery<Int, Int>(QueryKey("q2"))
         val q2Db = BasicQueryDbImpl(runtime, q2)
-        q1Db.set(1, 10)
-        q2Db.set(1, 20)
+        q1Db[1] = 10
+        q2Db[1] = 20
         val sum: QueryDb<Pair<Int, Int>, CountedInt> = DependencyTrackingDerivedQueryDbImpl(runtime, SumQuery(q1Db, q2Db))
         val sum1 = sum[1 to 1]
-        q1Db.set(1, 5)
-        q2Db.set(1, 25)
+        q1Db[1] = 5
+        q2Db[1] = 25
         val sum2 = sum[1 to 1]
         assertSame(sum1, sum2)
     }
@@ -76,8 +76,7 @@ class CountedInt(val value: Int, val count: Int = counter++) {
 
 class SumQuery(val q1: QueryDb<Int, Int>, val q2: QueryDb<Int, Int>) :
     DerivedQuery<Pair<Int, Int>, CountedInt> {
-    override val key: QueryKey<Pair<Int, Int>, CountedInt> =
-        QueryKey("sum")
+    override val key: QueryKey<Pair<Int, Int>, CountedInt> = QueryKey("sum")
 
     override fun doQuery(params: Pair<Int, Int>): CountedInt {
         return CountedInt(q1[params.first] + q2[params.second])
