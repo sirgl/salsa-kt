@@ -1,11 +1,8 @@
 package salsa.impl
 
-import salsa.DbRuntime
-import salsa.DerivedQuery
-import salsa.QueryDb
-import salsa.QueryInvocation
+import salsa.*
 
-class DependencyTrackingDerivedQueryDbImpl<P, R>(
+class DependencyTrackingDerivedQueryDbImpl<P, R : Any>(
     private val runtime: DbRuntime,
     override val query: DerivedQuery<P, R>
 ) : QueryDb<P, R> {
@@ -19,11 +16,17 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
         val verifiedAt = info.verifiedAtRevision
         val currentRevision = runtime.revision
         if (verifiedAt == currentRevision) { // just computed the value, no need to validate
+            runtime.logEvent {
+                CreateDerivedMemo(query.key)
+            }
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
             return info.result
         }
         // checking whether we can reuse deps or not
         if (info.dependencies.all { it.getRevisionOfLastChange() < verifiedAt }) {
+            runtime.logEvent {
+                DerivedMemoNotChanged(query.key)
+            }
             // no dependencies changed since last check
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
             info.verifiedAtRevision = currentRevision
@@ -33,13 +36,19 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
         val newInfo = executeQuery(parameters)
 
         if (newInfo.result == info.result) {
+            runtime.logEvent {
+                DerivedMemoNotChanged(query.key)
+            }
             // Despite the dependencies are changed, the result of current computation is the same. No need to update cache
-            runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
+            runtime.tryUpdateMaxChangedRevision(newInfo.changedAtRevision)
             info.verifiedAtRevision = currentRevision
             return info.result
         }
         cache[parameters] = newInfo
         runtime.tryUpdateMaxChangedRevision(newInfo.changedAtRevision)
+        runtime.logEvent {
+            DerivedMemoUpdated(query.key, newInfo.result)
+        }
         return newInfo.result
     }
 
@@ -67,7 +76,7 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
 }
 
 // TODO we can store hash here to check, whether dep has been changed
-private class ResultInfo<R>(
+private class ResultInfo<R : Any>(
     val result: R,
     val dependencies: List<QueryInvocation<*, *>>,
     /**

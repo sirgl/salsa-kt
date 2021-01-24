@@ -45,6 +45,17 @@ interface DbRuntime {
      *
      */
     fun forkTransient() : DbRuntime
+
+    fun emitEvent(event: RuntimeEvent)
+
+    fun hasLogger() : Boolean
+}
+
+inline fun DbRuntime.logEvent(eventBuilder: () -> RuntimeEvent) {
+    if (hasLogger()) {
+        val event = eventBuilder()
+        emitEvent(event)
+    }
 }
 
 /**

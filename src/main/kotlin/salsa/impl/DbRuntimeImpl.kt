@@ -1,20 +1,18 @@
 package salsa.impl
 
-import salsa.DbRuntime
-import salsa.Frame
-import salsa.Query
-import salsa.QueryDb
-import salsa.QueryInvocation
+import salsa.*
 import java.util.ArrayDeque
 import kotlin.math.max
 
 class DbRuntimeImpl : DbRuntime {
     override var revision: Long = 0
     private val executionStack = ArrayDeque<QueryFrame<*, *>>()
+    var eventLogger: ((RuntimeEvent) -> Unit)? = null
     // TODO store top level as a field
 
     override fun bumpRevision() {
         revision++
+        logEvent { BumpRevision(revision) }
     }
 
     override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {
@@ -22,11 +20,15 @@ class DbRuntimeImpl : DbRuntime {
     }
 
     override fun <P, R> pushFrame(query: Query<P, R>, parameters: P) {
+        logEvent { PushFrame(query.key) }
         executionStack.push(QueryFrame(query, parameters))
     }
 
     override fun popFrame() : Frame {
-        return executionStack.pop()
+        val frame = executionStack.pop()
+        val maxRevision = frame.maxRevision
+        logEvent { PopFrame(frame.query.key, maxRevision) }
+        return frame
     }
 
     override fun tryUpdateMaxChangedRevision(revision: Long) {
@@ -40,6 +42,14 @@ class DbRuntimeImpl : DbRuntime {
 
     override fun forkTransient(): DbRuntime {
         TODO("Not yet implemented")
+    }
+
+    override fun emitEvent(event: RuntimeEvent) {
+        eventLogger?.invoke(event)
+    }
+
+    override fun hasLogger(): Boolean {
+        return eventLogger != null
     }
 
     private fun getQueryFrame(): QueryFrame<*, *>? = executionStack.peekFirst()

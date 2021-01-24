@@ -1,9 +1,6 @@
 package salsa.transient
 
-import salsa.DbRuntime
-import salsa.Frame
-import salsa.Query
-import salsa.QueryDb
+import salsa.*
 
 // TODO is it different from simple runtime?
 class TransientRuntime : DbRuntime {
@@ -35,6 +32,14 @@ class TransientRuntime : DbRuntime {
     }
 
     override fun forkTransient(): DbRuntime {
+        TODO("Not yet implemented")
+    }
+
+    override fun emitEvent(event: RuntimeEvent) {
+        TODO("Not yet implemented")
+    }
+
+    override fun hasLogger(): Boolean {
         TODO("Not yet implemented")
     }
 }
