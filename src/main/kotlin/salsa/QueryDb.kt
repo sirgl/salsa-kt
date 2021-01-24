@@ -15,7 +15,7 @@ interface QueryDb<P, R> {
      * Before returning the result it must set in runtime maximal changedAt revision that was touched during the computation.
      */
     operator fun get(parameters: P) : R
-    fun changed(parameters: P) : Long
+    fun getRevisionOfLastChange(parameters: P) : Long
     fun forkTransient() : QueryDb<P, R>
 }
 

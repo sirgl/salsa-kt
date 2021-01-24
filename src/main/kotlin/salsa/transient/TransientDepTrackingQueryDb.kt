@@ -13,7 +13,7 @@ class TransientDepTrackingQueryDb<P, R>(val base: QueryDb<P, R>) : QueryDb<P, R>
         TODO("Not yet implemented")
     }
 
-    override fun changed(parameters: P): Long {
+    override fun getRevisionOfLastChange(parameters: P): Long {
         TODO("Not yet implemented")
     }
 

@@ -20,7 +20,7 @@ class TransientBasicQueryDb<P, R>(
         return overwritten[parameters]?.value ?: base[parameters]
     }
 
-    override fun changed(parameters: P): Long {
+    override fun getRevisionOfLastChange(parameters: P): Long {
         TODO("Not yet implemented")
     }
 

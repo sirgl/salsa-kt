@@ -25,7 +25,7 @@ class BasicQueryDbImpl<P, R>(private val runtime: DbRuntime, override val query:
         runtime.bumpRevision()
     }
 
-    override fun changed(parameters: P): Long {
+    override fun getRevisionOfLastChange(parameters: P): Long {
         return getMemoized(parameters).createdAt
     }
 

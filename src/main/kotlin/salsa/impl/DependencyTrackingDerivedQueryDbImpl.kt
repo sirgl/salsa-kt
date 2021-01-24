@@ -23,7 +23,7 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
             return info.result
         }
         // checking whether we can reuse deps or not
-        if (info.dependencies.all { it.changed() < verifiedAt }) {
+        if (info.dependencies.all { it.getRevisionOfLastChange() < verifiedAt }) {
             // no dependencies changed since last check
             runtime.tryUpdateMaxChangedRevision(info.changedAtRevision)
             info.verifiedAtRevision = currentRevision
@@ -56,7 +56,7 @@ class DependencyTrackingDerivedQueryDbImpl<P, R>(
         return ResultInfo(result, dependencies, revision, revision)
     }
 
-    override fun changed(parameters: P): Long {
+    override fun getRevisionOfLastChange(parameters: P): Long {
         val resultInfo = cache[parameters] ?: error("Changed must be called only on computed query parameters")
         return resultInfo.changedAtRevision
     }

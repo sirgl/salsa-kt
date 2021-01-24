@@ -21,7 +21,7 @@ class UnstableDerivedQueryDbImpl<P, R>(private val runtime: DbRuntime, override 
         return cache.computeIfAbsent(parameters, { query.doQuery(it) })
     }
 
-    override fun changed(parameters: P): Long {
+    override fun getRevisionOfLastChange(parameters: P): Long {
         return runtime.revision
     }
 

@@ -56,5 +56,5 @@ interface Frame {
 }
 
 class QueryInvocation<P, R>(val queryDb: QueryDb<P, R>, val parameters: P) {
-    fun changed() : Long = queryDb.changed(parameters)
+    fun getRevisionOfLastChange() : Long = queryDb.getRevisionOfLastChange(parameters)
 }
