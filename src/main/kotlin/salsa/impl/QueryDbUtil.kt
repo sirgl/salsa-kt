@@ -7,14 +7,13 @@ import salsa.Query
 /**
  * Tracks all the dependencies (calls of queries) during execution of [b]
  */
-inline fun <P, R> trackedFrame(runtime: DbRuntime, parameters: P, query: Query<P, R>, b: () -> R): Pair<R, Frame> {
-    runtime.pushFrame(query, parameters)
+inline fun <P, R> trackedFrame(runtime: DbRuntime, parameters: P, query: Query<P, R>, b: (Frame) -> R): Pair<R, Frame> {
+    val frame: Frame = runtime.pushFrame(query, parameters)
     val result: R
-    val frame: Frame
     try {
-        result = b()
+        result = b(frame)
     } finally {
-        frame = runtime.popFrame()
+        runtime.popFrame()
     }
     return result to frame
 }

@@ -18,5 +18,5 @@ interface DerivedQuery<P, R> : Query<P, R> {
     /**
      * Execution can depend on other query DBs and MUST be idempotent.
      */
-    fun doQuery(params: P) : R
+    fun doQuery(current: Frame, params: P) : R
 }

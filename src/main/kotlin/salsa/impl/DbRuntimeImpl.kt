@@ -2,6 +2,9 @@ package salsa.impl
 
 import salsa.*
 import java.util.ArrayDeque
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 import kotlin.math.max
 
 class DbRuntimeImpl : DbRuntime {
@@ -9,19 +12,20 @@ class DbRuntimeImpl : DbRuntime {
     private val executionStack = ArrayDeque<QueryFrame<*, *>>()
     var eventLogger: ((RuntimeEvent) -> Unit)? = null
     // TODO store top level as a field
+    private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
+    @Volatile
+    private var isWaitingWrite = false
 
     override fun bumpRevision() {
         revision++
         logEvent { BumpRevision(revision) }
     }
 
-    override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {
-        getQueryFrame()?.invocs?.add(QueryInvocation(queryDb, parameters))
-    }
-
-    override fun <P, R> pushFrame(query: Query<P, R>, parameters: P) {
+    override fun <P, R> pushFrame(query: Query<P, R>, parameters: P): Frame {
         logEvent { PushFrame(query.key) }
-        executionStack.push(QueryFrame(query, parameters))
+        val frame = QueryFrame(this, query, parameters)
+        executionStack.push(frame)
+        return frame
     }
 
     override fun popFrame() : Frame {
@@ -29,6 +33,10 @@ class DbRuntimeImpl : DbRuntime {
         val maxRevision = frame.maxRevision
         logEvent { PopFrame(frame.query.key, maxRevision) }
         return frame
+    }
+
+    override fun <P, R> willHaveCycleAfterAdding(query: Query<P, R>, parameters: P): Boolean {
+        return executionStack.any { it.query == query && it.parameters == parameters }
     }
 
     override fun tryUpdateMaxChangedRevision(revision: Long) {
@@ -52,12 +60,36 @@ class DbRuntimeImpl : DbRuntime {
         return eventLogger != null
     }
 
-    private fun getQueryFrame(): QueryFrame<*, *>? = executionStack.peekFirst()
-}
+    override fun <R> withReadLock(action: () -> R): R {
+        return lock.read(action)
+    }
 
-private class QueryFrame<P, R>(val query: Query<P, R>, val parameters: P) : Frame {
-    val invocs: MutableList<QueryInvocation<*, *>> = ArrayList()
-    override val invocations: List<QueryInvocation<*, *>>
-        get() = invocs
-    override var maxRevision: Long = -1
+    override fun <R> withWriteLock(action: () -> R): R {
+        isWaitingWrite = true
+        return lock.write {
+            isWaitingWrite = false
+            action()
+        }
+    }
+
+    override fun isWaitingForWrite(): Boolean {
+        return isWaitingWrite
+    }
+
+    override val topLevelFrame: Frame = object : Frame {
+            override val invocations: List<QueryInvocation<*, *>>
+                get() = emptyList()
+            override val maxRevision: Long
+                get() = -1
+
+            override fun <P, R> createChildFrame(query: Query<P, R>, parameters: P): Frame {
+                return QueryFrame(this@DbRuntimeImpl, query, parameters)
+            }
+
+            override fun tryUpdateMaxChangedRevision(revision: Long) {}
+
+            override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {}
+        }
+
+    private fun getQueryFrame(): QueryFrame<*, *>? = executionStack.peekFirst()
 }

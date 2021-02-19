@@ -1,39 +1,40 @@
 package salsa.impl
 
 import salsa.*
-import salsa.transient.TransientBaseQueryDb
 
-class BaseQueryDbImpl<P : Any, R : Any>(private val runtime: DbRuntime, override val query: Query<P, R>) : BaseQueryDb<P, R> {
-    private val inputs: HashMap<P, MemoizedBasicInput<R>> = HashMap()
-
-    override operator fun get(parameters: P) : R {
-        runtime.addAsDependency(this, parameters)
-        val memoized = getMemoized(parameters)
-        val value = memoized.value
-        runtime.tryUpdateMaxChangedRevision(memoized.createdAt)
-        runtime.logEvent { GetBase(parameters, value) }
-        return value
+class BaseQueryDbImpl<P : Any, R : Any>(
+    private val runtime: DbRuntime,
+    override val query: Query<P, R>,
+    private val cache: BaseQueryCache<P, R>
+) : BaseQueryDb<P, R> {
+    override fun get(parent: Frame, parameters: P): R {
+        return runtime.withReadLock {
+            parent.addAsDependency(this, parameters)
+            val memoized = getMemoized(parameters)
+            val value = memoized.value
+            parent.tryUpdateMaxChangedRevision(memoized.createdAt)
+            runtime.logEvent { GetBase(parameters, value) }
+            value
+        }
     }
 
-    private fun getMemoized(parameters: P) = inputs[parameters]
+    private fun getMemoized(parameters: P): MemoizedBasicInput<R> = cache.get(parameters)
         ?: error("Input must be filled before requesting")
 
     override fun set(params: P, value: R) {
-        val memoized = inputs[params]
-        if (memoized != null) {
-            if (memoized.value == value) return
+        runtime.withWriteLock {
+            val memoized = cache.get(params)
+            if (memoized != null) {
+                if (memoized.value == value) return@withWriteLock
+            }
+            cache.set(params, MemoizedBasicInput(value, runtime.revision))
+            runtime.bumpRevision()
+            runtime.logEvent { SetBase(params, value) }
         }
-        inputs[params] = MemoizedBasicInput(value, runtime.revision)
-        runtime.bumpRevision()
-        runtime.logEvent { SetBase(params, value) }
     }
 
     override fun getRevisionOfLastChange(parameters: P): Long {
         return getMemoized(parameters).createdAt
-    }
-
-    override fun forkTransient(): BaseQueryDb<P, R> {
-        return TransientBaseQueryDb(runtime, this)
     }
 }
 

@@ -3,6 +3,7 @@ package salsa
 
 /**
  * Runtime for the database, stores revision counter and [Frame] stack
+ * [DbRuntime] is protected with R/W lock
  */
 interface DbRuntime {
     /**
@@ -16,19 +17,16 @@ interface DbRuntime {
     fun bumpRevision()
 
     /**
-     * Add dependency to the currently active query (or do nothing if it is entrance query)
-     */
-    fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P)
-
-    /**
      * Add new frame to the stack and make it active
      */
-    fun <P, R> pushFrame(query: Query<P, R>, parameters: P)
+    fun <P, R> pushFrame(query: Query<P, R>, parameters: P) : Frame
 
     /**
      * Remove previous frame from the stack and
      */
     fun popFrame() : Frame
+
+    fun <P, R> willHaveCycleAfterAdding(query: Query<P, R>, parameters: P) : Boolean
 
     /**
      * Updates [Frame.maxRevision] if [revision] is greater
@@ -49,6 +47,15 @@ interface DbRuntime {
     fun emitEvent(event: RuntimeEvent)
 
     fun hasLogger() : Boolean
+
+    // TODO specify, what is under lock?
+    fun <R> withReadLock(action: () -> R) : R
+
+    fun <R> withWriteLock(action: () -> R) : R
+
+    fun isWaitingForWrite() : Boolean
+
+    val topLevelFrame: Frame
 }
 
 inline fun DbRuntime.logEvent(eventBuilder: () -> RuntimeEvent) {
@@ -58,14 +65,29 @@ inline fun DbRuntime.logEvent(eventBuilder: () -> RuntimeEvent) {
     }
 }
 
+fun DbRuntime.checkCancelled() {
+    if (isWaitingForWrite()) {
+        throw CancellationException()
+    }
+}
+
 /**
  * Runtime representation of query invocation
  */
 interface Frame {
     val invocations: List<QueryInvocation<*, *>>
     val maxRevision: Long
+
+    fun <P, R> createChildFrame(query: Query<P, R>, parameters: P) : Frame
+
+    fun tryUpdateMaxChangedRevision(revision: Long)
+
+    fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P)
+
 }
 
 class QueryInvocation<P, R>(val queryDb: QueryDb<P, R>, val parameters: P) {
     fun getRevisionOfLastChange() : Long = queryDb.getRevisionOfLastChange(parameters)
 }
+
+class CancellationException : Exception()
