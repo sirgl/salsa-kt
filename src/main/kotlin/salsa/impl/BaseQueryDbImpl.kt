@@ -13,7 +13,7 @@ class BaseQueryDbImpl<P : Any, R : Any>(
             val memoized = getMemoized(parameters)
             val value = memoized.value
             parent.tryUpdateMaxChangedRevision(memoized.createdAt)
-            runtime.logEvent { GetBase(parameters, value) }
+            runtime.logEvent { GetBase(parameters, value, query.key) }
             value
         }
     }

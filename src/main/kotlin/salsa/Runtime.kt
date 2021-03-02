@@ -19,14 +19,14 @@ interface DbRuntime {
     /**
      * Add new frame to the stack and make it active
      */
-    fun <P, R> pushFrame(query: Query<P, R>, parameters: P) : Frame
+    fun <P, R> pushFrame(query: Query<P, R>, parameters: P): Frame
 
     /**
      * Remove previous frame from the stack and
      */
-    fun popFrame() : Frame
+    fun popFrame(): Frame
 
-    fun <P, R> willHaveCycleAfterAdding(query: Query<P, R>, parameters: P) : Boolean
+    fun <P, R> willHaveCycleAfterAdding(query: Query<P, R>, parameters: P): Boolean
 
     /**
      * Updates [Frame.maxRevision] if [revision] is greater
@@ -42,18 +42,18 @@ interface DbRuntime {
     /**
      *
      */
-    fun forkTransient() : DbRuntime
+    fun forkTransient(): DbRuntime
 
     fun emitEvent(event: RuntimeEvent)
 
-    fun hasLogger() : Boolean
+    fun hasLogger(): Boolean
 
     // TODO specify, what is under lock?
-    fun <R> withReadLock(action: () -> R) : R
+    fun <R> withReadLock(action: () -> R): R
 
-    fun <R> withWriteLock(action: () -> R) : R
+    fun <R> withWriteLock(action: () -> R): R
 
-    fun isWaitingForWrite() : Boolean
+    fun isWaitingForWrite(): Boolean
 
     val topLevelFrame: Frame
 }
@@ -71,6 +71,13 @@ fun DbRuntime.checkCancelled() {
     }
 }
 
+fun <P, R> DbRuntime.topLevelCall(db: QueryDb<P, R>, key: P, name: String? = null): R {
+    logEvent { TopLevelQueryStarted(name) }
+    val res = db[topLevelFrame, key]
+    logEvent { TopLevelQueryFinished(name) }
+    return res
+}
+
 /**
  * Runtime representation of query invocation
  */
@@ -78,7 +85,7 @@ interface Frame {
     val invocations: List<QueryInvocation<*, *>>
     val maxRevision: Long
 
-    fun <P, R> createChildFrame(query: Query<P, R>, parameters: P) : Frame
+    fun <P, R> createChildFrame(query: Query<P, R>, parameters: P): Frame
 
     fun tryUpdateMaxChangedRevision(revision: Long)
 
@@ -87,7 +94,7 @@ interface Frame {
 }
 
 class QueryInvocation<P, R>(val queryDb: QueryDb<P, R>, val parameters: P) {
-    fun getRevisionOfLastChange() : Long = queryDb.getRevisionOfLastChange(parameters)
+    fun getRevisionOfLastChange(): Long = queryDb.getRevisionOfLastChange(parameters)
 }
 
 class CancellationException : Exception()

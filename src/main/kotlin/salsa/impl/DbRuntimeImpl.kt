@@ -1,6 +1,7 @@
 package salsa.impl
 
 import salsa.*
+import salsa.trace.EventLogger
 import java.util.ArrayDeque
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -10,7 +11,7 @@ import kotlin.math.max
 class DbRuntimeImpl : DbRuntime {
     override var revision: Long = 0
     private val executionStack = ArrayDeque<QueryFrame<*, *>>()
-    var eventLogger: ((RuntimeEvent) -> Unit)? = null
+    var eventLogger: EventLogger? = null
     // TODO store top level as a field
     private val lock: ReentrantReadWriteLock = ReentrantReadWriteLock()
     @Volatile
@@ -52,8 +53,9 @@ class DbRuntimeImpl : DbRuntime {
         TODO("Not yet implemented")
     }
 
+    // TODO add here also current frame - now it is unclear to which thread it belongs
     override fun emitEvent(event: RuntimeEvent) {
-        eventLogger?.invoke(event)
+        eventLogger?.logEvent(event)
     }
 
     override fun hasLogger(): Boolean {
