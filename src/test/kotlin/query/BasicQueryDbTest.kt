@@ -38,12 +38,16 @@ class BaseQueryDbTest {
             }
         }
         qDb[1] = "asdas"
-        val v = qDb[runtime.topLevelFrame, 1]
+        val v = runtime.topLevelCall(qDb, 1)
         assertEquals("asdas", v)
-        assertEquals(listOf(
-            BumpRevision(currentRevision=1),
-            SetBase(parameters=1, value="asdas"),
-            GetBase(parameters=1, value="asdas", qDb.query.key)
-        ), events)
+        assertEquals(
+            listOf(
+                BumpRevision(currentRevision = 1),
+                SetBase(parameters = 1, value = "asdas"),
+                TopLevelQueryStarted(name = null),
+                GetBase(parameters = 1, value = "asdas", qDb.query.key),
+                TopLevelQueryFinished(name = null)
+            ), events
+        )
     }
 }

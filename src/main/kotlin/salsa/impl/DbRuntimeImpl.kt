@@ -78,7 +78,8 @@ class DbRuntimeImpl : DbRuntime {
         return isWaitingWrite
     }
 
-    override val topLevelFrame: Frame = object : Frame {
+    override fun createTopLevelFrame(name: String?): Frame {
+        return object : Frame {
             override val invocations: List<QueryInvocation<*, *>>
                 get() = emptyList()
             override val maxRevision: Long
@@ -91,7 +92,9 @@ class DbRuntimeImpl : DbRuntime {
             override fun tryUpdateMaxChangedRevision(revision: Long) {}
 
             override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {}
+            override val name: String? = name
         }
+    }
 
     private fun getQueryFrame(): QueryFrame<*, *>? = executionStack.peekFirst()
 }

@@ -36,6 +36,9 @@ class QueryFrame<P, R>(val runtime: DbRuntime, val query: Query<P, R>, val param
     override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {
         _invocations.add(QueryInvocation(queryDb, parameters))
     }
+
+    override val name: String?
+        get() = null
 }
 
 interface QueryDbProvider {

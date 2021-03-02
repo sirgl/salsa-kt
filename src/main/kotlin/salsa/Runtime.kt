@@ -55,7 +55,7 @@ interface DbRuntime {
 
     fun isWaitingForWrite(): Boolean
 
-    val topLevelFrame: Frame
+    fun createTopLevelFrame(name: String?) : Frame
 }
 
 inline fun DbRuntime.logEvent(eventBuilder: () -> RuntimeEvent) {
@@ -73,7 +73,7 @@ fun DbRuntime.checkCancelled() {
 
 fun <P, R> DbRuntime.topLevelCall(db: QueryDb<P, R>, key: P, name: String? = null): R {
     logEvent { TopLevelQueryStarted(name) }
-    val res = db[topLevelFrame, key]
+    val res = db[createTopLevelFrame(name), key]
     logEvent { TopLevelQueryFinished(name) }
     return res
 }
@@ -91,6 +91,7 @@ interface Frame {
 
     fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P)
 
+    val name: String?
 }
 
 class QueryInvocation<P, R>(val queryDb: QueryDb<P, R>, val parameters: P) {
