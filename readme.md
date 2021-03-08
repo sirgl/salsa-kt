@@ -12,5 +12,3 @@ Problems, TODOs:
 container. E.g. we can't make efficient incremental highlighting storage, with 
 current implementation it is required to recreate it on each change or make this 
 container on top of this query-system
-- Multithreading
-- Fork of DB with minor transient change (can be helpful for completion)
