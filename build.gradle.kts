@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.4.21"
+    kotlin("jvm") version "1.4.30"
     maven
 }
 
@@ -13,6 +13,10 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation(group = "io.lacuna", name = "bifurcan", version = "0.2.0-alpha4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation(group = "org.rocksdb", name = "rocksdbjni", version = "6.15.2")
+
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
 }

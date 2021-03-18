@@ -1,53 +1,14 @@
 package salsa
 
-import kotlin.math.max
-
-/**
- * storage of info associated with a given query
- */
 interface QueryDb<P, R> {
-    val query: Query<P, R>
+    suspend fun executeQuery(frame: DbFrame, param: P) : R
 
     /**
-     * Computes or returns previously recorded value.
-     *
-     * Implementations:
-     * Should ensure that there is no cycle.
-     * Before returning the result it must set in runtime maximal changedAt revision that was touched during the computation.
+     * @return non-negative revision if required info is in the cache, -1 otherwise
      */
-    operator fun get(parent: Frame, parameters: P) : R
-    fun getRevisionOfLastChange(parameters: P) : Long
+    suspend fun getRevisionOfLastChange(frame: DbFrame, params: P, dbProvider: QueryDbProvider) : Long
 }
 
-class QueryFrame<P, R>(val runtime: DbRuntime, val query: Query<P, R>, val parameters: P) : Frame {
-    val _invocations: MutableList<QueryInvocation<*, *>> = ArrayList()
-    override val invocations: List<QueryInvocation<*, *>>
-        get() = _invocations
-    override var maxRevision: Long = -1
-
-    override fun <P1, R1> createChildFrame(query: Query<P1, R1>, parameters: P1): Frame {
-        return QueryFrame(runtime, query, parameters)
-    }
-
-    override fun tryUpdateMaxChangedRevision(revision: Long) {
-        maxRevision = max(revision, maxRevision)
-    }
-
-    override fun <P, R> addAsDependency(queryDb: QueryDb<P, R>, parameters: P) {
-        _invocations.add(QueryInvocation(queryDb, parameters))
-    }
-
-    override val name: String?
-        get() = null
+interface InputQueryDb<P, R> : QueryDb<P, R> {
+    fun setValue(parameter: P, value: R, durability: Durability)
 }
-
-interface QueryDbProvider {
-    fun <P, R> getQueryDb(key: QueryKey<P, R>) : QueryDb<P, R>
-}
-
-interface BaseQueryDb<P, R> : QueryDb<P, R> {
-    // TODO can't set it during executing another query (or we are inside a query)
-    operator fun set(params: P, value: R)
-}
-
-class CycleException(val query: Query<*, *>, val parameters: Any?) : Exception()
