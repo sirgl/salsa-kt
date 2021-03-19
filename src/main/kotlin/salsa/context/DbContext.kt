@@ -5,6 +5,7 @@ import salsa.DbBranchRegistryImpl
 import salsa.tracing.QueryTracer
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 import kotlin.contracts.ExperimentalContracts
 
 // TODO context contains too much API!!! users outside shouldn't bother about most of the things!
@@ -40,11 +41,14 @@ class DbContextImpl(branchStorage: DbBranchStorage) : DbContext {
 
     override val branchRegistry: DbBranchRegistry by lazy { DbBranchRegistryImpl(lock, this) }
 
+    @Volatile
     override var tracer: QueryTracer? = null
 
     override fun close() {
-        for (branch in branchRegistry.getActiveBranches()) {
-            branch.cancel()
+        lock.write {
+            for (branch in branchRegistry.getActiveBranches()) {
+                branch.cancel()
+            }
         }
     }
 
