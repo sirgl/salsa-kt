@@ -24,7 +24,7 @@ class InputQueryDbImpl<P, R>(
         cache.save(parameter, MemoizedInput(value, branch.revision + 1, durability))
     }
 
-    override suspend fun getRevisionOfLastChange(frame: DbFrame, params: P, dbProvider: QueryDbProvider): Long {
+    override fun getRevisionOfLastChange(frame: DbFrame, params: P, dbProvider: QueryDbProvider): Long {
         return cache.load(params).changedAtRevision
     }
 }

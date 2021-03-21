@@ -1,5 +1,6 @@
 package salsa.cache.inMemory.linear
 
+import kotlinx.coroutines.sync.Mutex
 import salsa.cache.DerivedCache
 import salsa.cache.ResultSlot
 import java.util.concurrent.ConcurrentHashMap
@@ -16,7 +17,7 @@ class InMemoryDerivedLinearCache<P, R> : DerivedCache<P, R> {
     }
 
     override fun getOrStoreEmpty(parameters: P): ResultSlot<R> {
-        return storage.computeIfAbsent(parameters, { ResultSlot(data = null) })
+        return storage.computeIfAbsent(parameters, { ResultSlot(dataGuard = Mutex(false), data = null) })
     }
 
     override fun updateWithNonNullData(parameters: P, value: ResultSlot<R>) {

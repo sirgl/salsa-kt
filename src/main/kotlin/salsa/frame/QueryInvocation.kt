@@ -6,7 +6,7 @@ import salsa.QueryDbProvider
 import salsa.QueryKey
 
 class QueryInvocation<P>(val key: QueryKey<P, *>, val param: P) {
-    suspend fun getRevisionOfLastChange(frame: DbFrame, dbProvider: QueryDbProvider): DbRevision {
+    fun getRevisionOfLastChange(frame: DbFrame, dbProvider: QueryDbProvider): DbRevision {
         val db = dbProvider.findDb(key)
         return db.getRevisionOfLastChange(frame, param, dbProvider)
     }

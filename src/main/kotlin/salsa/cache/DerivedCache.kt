@@ -1,5 +1,6 @@
 package salsa.cache
 
+import kotlinx.coroutines.sync.Mutex
 import salsa.frame.QueryInvocation
 
 
@@ -28,11 +29,11 @@ interface DerivedCache<P, R> {
  * Slot for result of a query with given parameters (stored in cache).
  * If data is null, it is possible to wait for result (after setting up result, slot will be notified).
  */
-@Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN") // need to use await
 class ResultSlot<R>(
     @Volatile
-    var data: ResultData<R>?
-) : Object()
+    var data: ResultData<R>?,
+    val dataGuard: Mutex
+)
 
 class ResultData<R>(
     var result: R,

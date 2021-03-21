@@ -8,6 +8,9 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 interface DbFrame {
+    /**
+     * Implementations must be safe for multiple threads to use this method.
+     */
     fun <P> addDependency(key: QueryKey<P, *>, param: P)
 
     val branch: DbBranch

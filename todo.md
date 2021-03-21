@@ -10,3 +10,9 @@
 5. Persistence
 6. Single inputs (but not a map, e.g. manifest)
 7. Transient forks and so on
+8. Property testing
+9. Cover everything with statistics
+   * Patterns of accesses of the cache
+   * Memory consumption
+10. GC
+10. Use some ready cache library (e.g. Caffeine) to implement in-memory on heap DB

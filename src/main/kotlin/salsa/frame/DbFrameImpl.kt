@@ -8,7 +8,11 @@ import salsa.tracing.TraceToken
 class DbFrameImpl(override val branch: DbBranch, override val traceToken: TraceToken) : DbFrame {
     val dependencies: MutableSet<QueryInvocation<*>> = HashSet()
 
+    private val lock = Any()
+
     override fun <P> addDependency(key: QueryKey<P, *>, param: P) {
-        dependencies.add(QueryInvocation(key, param))
+        synchronized(lock) {
+            dependencies.add(QueryInvocation(key, param))
+        }
     }
 }
