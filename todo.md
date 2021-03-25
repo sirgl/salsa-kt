@@ -15,4 +15,6 @@
    * Patterns of accesses of the cache
    * Memory consumption
 10. GC
-10. Use some ready cache library (e.g. Caffeine) to implement in-memory on heap DB
+11. Use some ready cache library (e.g. Caffeine) to implement in-memory on heap DB
+12. Get all inputs query
+12. Interning

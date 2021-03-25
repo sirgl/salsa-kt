@@ -2,9 +2,11 @@ package salsa.context
 
 import salsa.*
 import salsa.branch.BranchParams
+import salsa.branch.BranchTraits
 import salsa.branch.DbBranch
 import salsa.cache.inMemory.linear.InMemoryDerivedLinearCache
 import salsa.cache.inMemory.linear.InMemoryInputLinearCache
+import salsa.cache.inMemory.transient.TransientInputCache
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -18,6 +20,7 @@ interface QueryRegistry {
 
     fun <P, R> registerInputQuery(key: QueryKey<P, R>, dbFactory: QueryDbFactory<P, R>? = null)
 
+    fun <P, R> getDerivedQuery(key: DerivedQueryKey<P, R>, dbProvider: QueryDbProvider) : DerivedQuery<P, R>
 //    fun iterateQueryKeys() : Iterable<QueryKey<*, *>>
 }
 
@@ -35,8 +38,7 @@ class QueryRegistryImpl(
             return if (factory == null) {
                 when (key) {
                     is DerivedQueryKey -> {
-                        QueryDbFactory { params, branch ->
-                            // TODO how to create query itself?
+                        QueryDbFactory { _, branch ->
                             val queryFactory = queryInfo.queryFactory ?: error("Derived query has no factory")
                             val query = queryFactory.createQuery(dbProvider) as DerivedQuery<P, R>
                             DerivedQueryDbImpl(lock, query, InMemoryDerivedLinearCache(), branch, dbProvider)
@@ -71,6 +73,15 @@ class QueryRegistryImpl(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    override fun <P, R> getDerivedQuery(key: DerivedQueryKey<P, R>, dbProvider: QueryDbProvider): DerivedQuery<P, R> {
+        return lock.read {
+            val queryInfo = queries[key] ?: error("No query for key $key")
+            val queryFactory = queryInfo.queryFactory ?: error("Derived query has no factory")
+            queryFactory.createQuery(dbProvider) as DerivedQuery<P, R>
+        }
+    }
+
 }
 
 private class InputQueryInfo<P, R>(
@@ -82,7 +93,7 @@ private class InputQueryInfo<P, R>(
 
 fun interface QueryDbFactory<P, R> {
     // TODO how to create single DB for several queries
-    fun createQueryDb(branchParams: BranchParams, branch: DbBranch) : QueryDb<P, R>
+    fun createQueryDb(branchTraits: BranchTraits, branch: DbBranch) : QueryDb<P, R>
 }
 
 fun interface QueryFactory<P, R> {

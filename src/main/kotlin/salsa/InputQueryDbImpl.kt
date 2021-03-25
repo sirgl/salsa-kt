@@ -8,7 +8,7 @@ import salsa.tracing.GetInputEvent
 
 class InputQueryDbImpl<P, R>(
     private val branch: DbBranch,
-    private val cache: InputCache<P, R>,
+    override val cache: InputCache<P, R>,
     private val key: InputQueryKey<P, R>
 ) : InputQueryDb<P, R> {
     override suspend fun executeQuery(frame: DbFrame, param: P): R {

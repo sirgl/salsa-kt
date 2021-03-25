@@ -8,15 +8,27 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.contracts.ExperimentalContracts
 
 class DbBranchImpl(
     val lock: ReentrantReadWriteLock,
     override val context: DbContext,
     branchParams: BranchParams,
     val name: String? = null,
-    baseRevision: DbRevision
+    baseRevision: DbRevision,
+    parent: DbBranch? = null
 ) : DbBranch {
-    private val dbProvider: QueryDbProvider = BranchQueryDbProvider(context.queryRegistry, branchParams, this)
+
+    override val queryDbProvider: QueryDbProvider
+
+    init {
+        // TODO reconsider this when there can be non transient forks
+        queryDbProvider = if (parent == null) {
+            BranchQueryDbProvider(context.queryRegistry, BranchTraits(branchParams, false), this)
+        } else {
+            TransientDbProvider(context.queryRegistry, lock, parent, this)
+        }
+    }
 
     // TODO use stamped lock here
     // TODO frozen must be under lock (it may be unfrozen after all branches are killed)
@@ -33,10 +45,17 @@ class DbBranchImpl(
         return state == BranchState.Cancelled
     }
 
-    override fun freezeAndFork(branchParams: BranchParams): DbBranch {
+    override fun forkTransientAndFreeze(branchParams: BranchParams): DbBranch {
         state = BranchState.Frozen
         // TODO make forked storage
-        return DbBranchImpl(lock, context, branchParams, branchParams.name, revision)
+        return DbBranchImpl(
+            lock,
+            context,
+            branchParams,
+            branchParams.name,
+            revision,
+            parent = this
+        )
     }
 
     override fun isFrozen(): Boolean {
@@ -58,7 +77,7 @@ class DbBranchImpl(
 
     override suspend fun <P, R> executeQuery(key: QueryKey<P, R>, params: P, name: String): R {
         lock.read {
-            val db = dbProvider.findDb(key)
+            val db = queryDbProvider.findDb(key)
 
             val frame = DbFrameImpl(this, createTraceToken(name))
             frame.trace { TopLevelQueryStarted }
@@ -82,7 +101,7 @@ class DbBranchImpl(
         state = BranchState.Cancelled
         lock.write {
             for (change in diff) {
-                change.applyChange(dbProvider)
+                change.applyChange(queryDbProvider)
             }
             revisionAtomic.incrementAndGet()
             state = BranchState.Normal

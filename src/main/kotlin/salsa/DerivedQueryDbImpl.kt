@@ -1,23 +1,22 @@
 package salsa
 
-import kotlinx.coroutines.sync.withLock
 import salsa.branch.DbBranch
 import salsa.cache.DerivedCache
 import salsa.cache.ResultData
+import salsa.cache.accessData
+import salsa.frame.QueryInvocation
 import salsa.tracing.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.contracts.ExperimentalContracts
 import kotlin.math.max
 
-@ExperimentalContracts
 class DerivedQueryDbImpl<P, R>(
     private val lock: ReentrantReadWriteLock,
-    private val query: DerivedQuery<P, R>,
-    private val cache: DerivedCache<P, R>,
+    override val query: DerivedQuery<P, R>,
+    override val cache: DerivedCache<P, R>,
     private val branch: DbBranch,
     private val dbProvider: QueryDbProvider
-) : QueryDb<P, R> {
+) : DerivedQueryDb<P, R> {
     override suspend fun executeQuery(frame: DbFrame, param: P): R {
         frame.addDependency(query.key, param)
         lock.read {
@@ -28,12 +27,10 @@ class DerivedQueryDbImpl<P, R>(
 
     private suspend fun getResultDataUpdatingIfNeeded(frame: DbFrame, param: P) : ResultData<R> {
         val slot = cache.getOrStoreEmpty(param)
-        slot.dataGuard.withLock {
-            val resultData = slot.data
-
+        slot.accessData { resultData ->
             if (resultData == null) {
                 val res = doExecuteQuery(frame, param)
-                slot.data = res
+                cache.updateSlotData(slot, res)
                 return res
             }
 
@@ -50,7 +47,7 @@ class DerivedQueryDbImpl<P, R>(
                     val revisionOfLastChange = it.getRevisionOfLastChange(frame, dbProvider) // here we should go till the very inputs
                     revisionOfLastChange != -1L && revisionOfLastChange <= currentVerifiedAt
                 }) {
-                resultData.verifiedAtRevision = currentRevision
+                cache.updateVerifiedAtRevision(slot, resultData, currentRevision)
                 frame.trace { QueryReused(QueryReuseType.DependenciesNotChanged, query.key, param, resultData.result) }
                 // TODO probably here we need to call storage that the revision was changed
                 return resultData
@@ -59,14 +56,15 @@ class DerivedQueryDbImpl<P, R>(
             val newResultData = doExecuteQuery(frame, param)
             if (newResultData.result == resultData.result) {
                 // no need to update changed at, so that more queries could skip query computation
-                resultData.verifiedAtRevision = currentRevision
+                cache.updateVerifiedAtRevision(slot, resultData, currentRevision)
                 return resultData
             } else {
-                slot.data = newResultData
+                cache.updateSlotData(slot, newResultData)
             }
 
             return newResultData
         }
+        error("This should never happen") // TODO remove after fixing kotlin issue
     }
 
     private suspend fun doExecuteQuery(frame: DbFrame, param: P): ResultData<R> {
@@ -74,7 +72,7 @@ class DerivedQueryDbImpl<P, R>(
             query.executeQuery(it, param)
         }
         val revision = branch.revision
-        return ResultData(result, child.dependencies, revision, revision)
+        return ResultDataImpl(result, child.dependencies, revision, revision)
     }
 
     override fun getRevisionOfLastChange(frame: DbFrame, params: P, dbProvider: QueryDbProvider): Long {
@@ -92,3 +90,10 @@ class DerivedQueryDbImpl<P, R>(
         return maxRevision
     }
 }
+
+class ResultDataImpl<R>(
+    override val result: R,
+    override val dependencies: Set<QueryInvocation<*>>,
+    override var verifiedAtRevision: Long,
+    override val changedAtRevision: Long
+) : ResultData<R>

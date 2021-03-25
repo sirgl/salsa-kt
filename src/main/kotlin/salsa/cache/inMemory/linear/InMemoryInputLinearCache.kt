@@ -6,7 +6,8 @@ import salsa.cache.MemoizedInput
 import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryInputLinearCache<P, R>(private val key: QueryKey<P, R>) : InputCache<P, R> {
-    private val cache = ConcurrentHashMap<P, MemoizedInput<R>>()
+    // there is no need to make this map concurrent as inputs are only modified
+    private val cache = HashMap<P, MemoizedInput<R>>()
 
     override fun save(params: P, result: MemoizedInput<R>) {
         cache[params] = result

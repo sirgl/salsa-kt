@@ -2,6 +2,7 @@ package salsa.branch
 
 import salsa.*
 import salsa.context.DbContext
+import salsa.context.QueryDbFactory
 
 
 /**
@@ -10,7 +11,7 @@ import salsa.context.DbContext
  * Branch may be cancelled, after this its storage is freed and it is not able to handle [executeQuery]. All started queries
  * will be cancelled.
  *
- * Branch may be in a frozen state after [freezeAndFork] and in this case user is not able to change its inputs until
+ * Branch may be in a frozen state after [forkTransientAndFreeze] and in this case user is not able to change its inputs until
  * it is not unfrozen.
  */
 interface DbBranch {
@@ -24,7 +25,7 @@ interface DbBranch {
      * Freezes self and creates new branch.
      * For mutable storage it is better than full fork but in case of immutable works exactly the same and not freezes
      */
-    fun freezeAndFork(branchParams: BranchParams) : DbBranch
+    fun forkTransientAndFreeze(branchParams: BranchParams) : DbBranch
 
     fun isFrozen() : Boolean
 
@@ -42,6 +43,9 @@ interface DbBranch {
      * Immediately cancels all queries, applies diff and resumes
      */
     fun applyInputDiff(diff: List<AtomInputChange<*, *>>, name: String? = null)
+
+    // TODO get rid of implementation details
+    val queryDbProvider: QueryDbProvider
 }
 
 // TODO it would be good to have also a diff of the result change (e.g. for files)
@@ -63,3 +67,4 @@ class BranchParams(
     val name: String? = null,
 )
 
+class BranchTraits(val params: BranchParams, val isTransient: Boolean)

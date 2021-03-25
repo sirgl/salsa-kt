@@ -34,11 +34,11 @@ class DbBranchRegistryImpl(
 
     override fun createEmptyBranch(branchParams: BranchParams): DbBranch {
         val branch = DbBranchImpl(
+            lock = lock,
             context = queryContext,
             branchParams = branchParams,
             name = branchParams.name,
             baseRevision = 0,
-            lock = lock
         )
         lock.write {
             registerBranch(branch)

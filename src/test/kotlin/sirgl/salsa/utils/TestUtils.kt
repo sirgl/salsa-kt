@@ -1,6 +1,5 @@
 package sirgl.salsa.utils
 
-import kotlinx.coroutines.runBlocking
 import salsa.*
 import salsa.branch.AtomInputChange
 import salsa.branch.BranchParams
