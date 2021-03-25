@@ -2,7 +2,6 @@ package salsa.branch
 
 import salsa.*
 import salsa.context.DbContext
-import salsa.context.QueryDbFactory
 
 
 /**
@@ -47,6 +46,8 @@ interface DbBranch {
     // TODO get rid of implementation details
     val queryDbProvider: QueryDbProvider
 }
+
+class BranchFrozenException : Exception()
 
 // TODO it would be good to have also a diff of the result change (e.g. for files)
 class AtomInputChange<P, R>(

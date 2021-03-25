@@ -2,6 +2,7 @@ package sirgl.salsa
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import salsa.branch.BranchFrozenException
 import salsa.branch.BranchParams
 import sirgl.salsa.utils.*
 import kotlin.contracts.ExperimentalContracts
@@ -10,6 +11,21 @@ import kotlin.test.assertTrue
 
 @ExperimentalContracts
 class TransientDbTest {
+    @Test(expected = BranchFrozenException::class)
+    fun testAfterTransientForkCantUpdateMainBranch() {
+        runBlocking {
+            val context = defaultContext()
+            context.queryRegistry.registerInputQuery(intStringKey)
+            val branch = context.branchRegistry.createEmptyBranch(defaultParams())
+            assertEquals(0, branch.revision)
+            branch.setInput(intStringKey, 1, "main")
+            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val forkedBranch = branch.forkTransientAndFreeze(params)
+            forkedBranch.setInput(intStringKey, 1, "forked")
+            branch.setInput(intStringKey, 1, "new forked")
+        }
+    }
+
     @Test
     fun testTransientForkInputsChangesButMainBranchIsStillQueriable() {
         runBlocking {

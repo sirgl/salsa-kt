@@ -96,8 +96,10 @@ class DbBranchImpl(
     private fun createTraceToken(name: String?) = TraceToken(context.nextTraceTokenId(), name)
 
     override fun applyInputDiff(diff: List<AtomInputChange<*, *>>, name: String?) {
-        // TODO if frozen - throw exception
-        // TODO cancel all input requests, prepare to do write action
+        if (state == BranchState.Frozen) {
+            throw BranchFrozenException()
+        }
+        // TODO separate state into frozen and cancelled. here just set cancelled, but do not touch frozen and check it under lock
         state = BranchState.Cancelled
         lock.write {
             for (change in diff) {
