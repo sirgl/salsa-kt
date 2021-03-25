@@ -68,6 +68,4 @@ class TransientDbTest {
             assertEquals(30, branch.executeQuery(Sum2Query.KEY, 1 to 2, "Top level"))
         }
     }
-
-    // TODO check can't change inputs in main branch after fork
 }
