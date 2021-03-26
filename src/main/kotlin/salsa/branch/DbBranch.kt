@@ -18,7 +18,14 @@ interface DbBranch {
 
     fun cancel()
 
+    /**
+     * Delete branch. It should have no forks, otherwise throws exception
+     */
+    fun delete()
+
     fun isCancelled() : Boolean
+
+    fun isDeleted() : Boolean
 
     /**
      * Freezes self and creates new branch.
@@ -48,6 +55,7 @@ interface DbBranch {
 }
 
 class BranchFrozenException : Exception()
+class BranchDeletedException : Exception()
 
 // TODO it would be good to have also a diff of the result change (e.g. for files)
 class AtomInputChange<P, R>(

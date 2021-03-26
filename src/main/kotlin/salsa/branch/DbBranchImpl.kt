@@ -3,51 +3,80 @@ package salsa.branch
 import salsa.*
 import salsa.context.DbContext
 import salsa.frame.DbFrameImpl
-import salsa.tracing.*
+import salsa.tracing.InputsUpdate
+import salsa.tracing.TopLevelQueryFinished
+import salsa.tracing.TopLevelQueryStarted
+import salsa.tracing.TraceToken
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
-import kotlin.contracts.ExperimentalContracts
 
 class DbBranchImpl(
     val lock: ReentrantReadWriteLock,
     override val context: DbContext,
     branchParams: BranchParams,
-    val name: String? = null,
+    private val name: String? = null,
     baseRevision: DbRevision,
-    parent: DbBranch? = null
+    private val parent: DbBranch? = null
 ) : DbBranch {
 
-    override val queryDbProvider: QueryDbProvider
-
-    init {
-        // TODO reconsider this when there can be non transient forks
-        queryDbProvider = if (parent == null) {
-            BranchQueryDbProvider(context.queryRegistry, BranchTraits(branchParams, false), this)
-        } else {
-            TransientDbProvider(context.queryRegistry, lock, parent, this)
-        }
+    // TODO reconsider this when there can be non transient forks
+    override val queryDbProvider: QueryDbProvider = if (parent == null) {
+        BranchQueryDbProvider(context.queryRegistry, BranchTraits(branchParams, false), this)
+    } else {
+        TransientDbProvider(context.queryRegistry, lock, parent, this)
     }
+
+    private val forkedChildren = ArrayList<DbBranch>()
 
     // TODO use stamped lock here
     // TODO frozen must be under lock (it may be unfrozen after all branches are killed)
     @Volatile
     private var state = BranchState.Normal
+    @Volatile
+    private var cancelled = false
 
 
     override fun cancel() {
-        // TODO here we should log it somehow
-        state = BranchState.Cancelled
+        // TODO log it somehow
+        cancelled = true
+    }
+
+    override fun delete() {
+        cancel()
+        lock.write {
+            if (forkedChildren.isNotEmpty()) {
+                throw error("Branch deleted before its children")
+            }
+            // TODO log it somehow
+            state = BranchState.Deleted
+            if (parent != null) {
+                parent as DbBranchImpl
+                parent.notifyChildForkDeleted(this)
+            }
+        }
+    }
+
+    private fun notifyChildForkDeleted(child: DbBranch) {
+        lock.write { // TODO probably no sense to do in under write action as it shouldn't affect main branch
+            forkedChildren.remove(child)
+            if (forkedChildren.isEmpty()) {
+                state = BranchState.Normal
+            }
+        }
     }
 
     override fun isCancelled(): Boolean {
-        return state == BranchState.Cancelled
+        return cancelled
+    }
+
+    override fun isDeleted(): Boolean {
+        return state == BranchState.Deleted
     }
 
     override fun forkTransientAndFreeze(branchParams: BranchParams): DbBranch {
         state = BranchState.Frozen
-        // TODO make forked storage
         return DbBranchImpl(
             lock,
             context,
@@ -96,12 +125,14 @@ class DbBranchImpl(
     private fun createTraceToken(name: String?) = TraceToken(context.nextTraceTokenId(), name)
 
     override fun applyInputDiff(diff: List<AtomInputChange<*, *>>, name: String?) {
-        if (state == BranchState.Frozen) {
-            throw BranchFrozenException()
-        }
-        // TODO separate state into frozen and cancelled. here just set cancelled, but do not touch frozen and check it under lock
-        state = BranchState.Cancelled
+        cancelled = true
         lock.write {
+            if (state == BranchState.Frozen) {
+                throw BranchFrozenException()
+            } else if (state == BranchState.Deleted) {
+                throw BranchDeletedException()
+            }
+            cancelled = false // TODO probably here I should atomically try to change value to false (otherwise some unfortunate query may have to wait because readers won't stop)
             for (change in diff) {
                 change.applyChange(queryDbProvider)
             }
@@ -127,6 +158,6 @@ class DbBranchImpl(
 
 private enum class BranchState {
     Normal,
-    Cancelled,
     Frozen,
+    Deleted,
 }

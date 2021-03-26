@@ -27,6 +27,27 @@ class TransientDbTest {
     }
 
     @Test
+    fun testAfterForkedBranchDeletedMainBranchUnfreezes() {
+        runBlocking {
+            val context = defaultContext()
+            context.queryRegistry.registerInputQuery(intStringKey)
+            val branch = context.branchRegistry.createEmptyBranch(defaultParams())
+            assertEquals(0, branch.revision)
+            branch.setInput(intStringKey, 1, "main")
+            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val forkedBranch1 = branch.forkTransientAndFreeze(params)
+            val forkedBranch2 = branch.forkTransientAndFreeze(params)
+            forkedBranch1.setInput(intStringKey, 1, "forked1")
+            forkedBranch1.setInput(intStringKey, 1, "forked2")
+            assertTrue(branch.isFrozen())
+            forkedBranch1.delete()
+            forkedBranch2.delete()
+            assertTrue(!branch.isFrozen())
+            branch.setInput(intStringKey, 1, "after")
+        }
+    }
+
+    @Test
     fun testTransientForkInputsChangesButMainBranchIsStillQueriable() {
         runBlocking {
             val context = defaultContext()
