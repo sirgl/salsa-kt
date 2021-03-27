@@ -16,4 +16,8 @@ class InMemoryInputLinearCache<P, R>(private val key: QueryKey<P, R>) : InputCac
     override fun load(params: P): MemoizedInput<R> {
         return cache[params] ?: error("Input $params in $key accessed before set")
     }
+
+    override fun fork(): InputCache<P, R> {
+        throw NotImplementedError()
+    }
 }

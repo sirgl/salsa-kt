@@ -22,6 +22,8 @@ interface DerivedCache<P, R> {
     fun updateSlotData(slot: ResultSlot<R>, newData: ResultData<R>)
 
     fun updateVerifiedAtRevision(slot: ResultSlot<R>, data: ResultData<R>, revision: DbRevision)
+
+    fun fork() : DerivedCache<P, R>
 }
 
 /**

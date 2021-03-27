@@ -13,6 +13,8 @@ interface InputCache<P, R> {
      * Runs under read action
      */
     fun load(params: P) : MemoizedInput<R>
+
+    fun fork() : InputCache<P, R>
 }
 
 class MemoizedInput<R>(val value: R, val changedAtRevision: DbRevision, val durability: Durability)

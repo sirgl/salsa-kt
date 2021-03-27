@@ -39,7 +39,7 @@ interface DbBranch {
 
     val revision: DbRevision
 
-    fun fork(strategy: BranchParams) : DbBranch
+    fun fork(params: BranchParams) : DbBranch
 
     // TODO this method is not the best way - here we do hash lookup to find db for query
     //  probably it is better to make some kind of QueryCallSite that will already have it inside
@@ -71,9 +71,7 @@ class AtomInputChange<P, R>(
 }
 
 class BranchParams(
-    val isDurable: Boolean,
-    val isLinear: Boolean,
     val name: String? = null,
 )
 
-class BranchTraits(val params: BranchParams, val isTransient: Boolean)
+class BranchTraits(val params: BranchParams)

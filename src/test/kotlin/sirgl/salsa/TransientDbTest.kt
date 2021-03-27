@@ -5,11 +5,9 @@ import org.junit.Test
 import salsa.branch.BranchFrozenException
 import salsa.branch.BranchParams
 import sirgl.salsa.utils.*
-import kotlin.contracts.ExperimentalContracts
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@ExperimentalContracts
 class TransientDbTest {
     @Test(expected = BranchFrozenException::class)
     fun testAfterTransientForkCantUpdateMainBranch() {
@@ -19,7 +17,7 @@ class TransientDbTest {
             val branch = context.branchRegistry.createEmptyBranch(defaultParams())
             assertEquals(0, branch.revision)
             branch.setInput(intStringKey, 1, "main")
-            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val params = BranchParams(name = "my transient branch")
             val forkedBranch = branch.forkTransientAndFreeze(params)
             forkedBranch.setInput(intStringKey, 1, "forked")
             branch.setInput(intStringKey, 1, "new forked")
@@ -34,7 +32,7 @@ class TransientDbTest {
             val branch = context.branchRegistry.createEmptyBranch(defaultParams())
             assertEquals(0, branch.revision)
             branch.setInput(intStringKey, 1, "main")
-            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val params = BranchParams(name = "my transient branch")
             val forkedBranch1 = branch.forkTransientAndFreeze(params)
             val forkedBranch2 = branch.forkTransientAndFreeze(params)
             forkedBranch1.setInput(intStringKey, 1, "forked1")
@@ -56,7 +54,7 @@ class TransientDbTest {
             assertEquals(0, branch.revision)
             branch.setInput(intStringKey, 1, "Hello")
             branch.setInput(intStringKey, 2, "Bar")
-            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val params = BranchParams(name = "my transient branch")
             val forkedBranch = branch.forkTransientAndFreeze(params)
             assertTrue(branch.isFrozen())
             forkedBranch.setInput(intStringKey, 1, "Bye")
@@ -79,7 +77,7 @@ class TransientDbTest {
             assertEquals(0, branch.revision)
             branch.setInput(intIntKey, 1, 10)
             branch.setInput(intIntKey, 2, 20)
-            val params = BranchParams(isDurable = false, isLinear = false, name = "my transient branch")
+            val params = BranchParams(name = "my transient branch")
             val forkedBranch = branch.forkTransientAndFreeze(params)
             assertTrue(branch.isFrozen())
             forkedBranch.setInput(intIntKey, 1, 30)

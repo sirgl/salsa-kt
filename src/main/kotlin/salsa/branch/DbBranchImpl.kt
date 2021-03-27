@@ -16,22 +16,25 @@ class DbBranchImpl(
     val lock: ReentrantReadWriteLock,
     override val context: DbContext,
     branchParams: BranchParams,
-    private val name: String? = null,
     baseRevision: DbRevision,
-    private val parent: DbBranch? = null
+    private val parent: DbBranch? = null,
+    isFullFork: Boolean = false
 ) : DbBranch {
+    private val name: String? = branchParams.name
 
-    // TODO reconsider this when there can be non transient forks
     override val queryDbProvider: QueryDbProvider = if (parent == null) {
-        BranchQueryDbProvider(context.queryRegistry, BranchTraits(branchParams, false), this)
+        BranchQueryDbProvider(context.queryRegistry, BranchTraits(branchParams), this)
     } else {
-        TransientDbProvider(context.queryRegistry, lock, parent, this)
+        if (isFullFork) {
+            ForkedDbProvider(context.queryRegistry, lock, parent, this)
+        } else {
+            TransientDbProvider(context.queryRegistry, lock, parent, this)
+        }
     }
 
     private val forkedChildren = ArrayList<DbBranch>()
 
     // TODO use stamped lock here
-    // TODO frozen must be under lock (it may be unfrozen after all branches are killed)
     @Volatile
     private var state = BranchState.Normal
     @Volatile
@@ -81,7 +84,6 @@ class DbBranchImpl(
             lock,
             context,
             branchParams,
-            branchParams.name,
             revision,
             parent = this
         )
@@ -100,8 +102,10 @@ class DbBranchImpl(
     override val revision: DbRevision
         get() = revisionAtomic.get()
 
-    override fun fork(strategy: BranchParams): DbBranch {
-        TODO("Not yet implemented")
+    override fun fork(params: BranchParams): DbBranch {
+        lock.read {
+            return DbBranchImpl(lock, context, params, revision, parent = this, isFullFork = true)
+        }
     }
 
     override suspend fun <P, R> executeQuery(key: QueryKey<P, R>, params: P, name: String): R {

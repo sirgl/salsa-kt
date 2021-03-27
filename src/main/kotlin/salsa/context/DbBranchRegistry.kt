@@ -37,7 +37,6 @@ class DbBranchRegistryImpl(
             lock = lock,
             context = queryContext,
             branchParams = branchParams,
-            name = branchParams.name,
             baseRevision = 0,
         )
         lock.write {

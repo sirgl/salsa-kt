@@ -2,6 +2,7 @@ package salsa
 
 import salsa.branch.BranchTraits
 import salsa.branch.DbBranch
+import salsa.cache.inMemory.forkable.InMemoryInputForkableCache
 import salsa.cache.inMemory.transient.TransientDerivedCache
 import salsa.cache.inMemory.transient.TransientInputCache
 import salsa.context.QueryRegistry
@@ -68,6 +69,42 @@ class TransientDbProvider(
                     val baseDb = parent.queryDbProvider.findDb(it) as DerivedQueryDb<P, R>
                     val query = queryRegistry.getDerivedQuery(it, this)
                     DerivedQueryDbImpl(lock, query, TransientDerivedCache(baseDb.cache), current, this)
+                }
+            }
+
+        } as QueryDb<P, R>
+    }
+}
+
+class ForkedDbProvider(
+    private val queryRegistry: QueryRegistry,
+    private val lock: ReentrantReadWriteLock,
+    private val parent: DbBranch,
+    private val current: DbBranch,
+) : QueryDbProvider {
+    private val queryDbs = ConcurrentHashMap<QueryKey<*, *>, QueryDb<*, *>>()
+
+    override fun <P, R> findDb(key: QueryKey<P, R>): QueryDb<P, R> {
+        return getOrCreate(key)
+    }
+
+    override fun <P, R> findInputDb(key: InputQueryKey<P, R>): InputQueryDb<P, R> {
+        return getOrCreate(key) as InputQueryDb<P, R>
+    }
+
+    private fun <P, R> getOrCreate(key: QueryKey<P, R>): QueryDb<P, R> {
+        @Suppress("UNCHECKED_CAST")
+        return queryDbs.computeIfAbsent(key) {
+            when (it) {
+                is InputQueryKey<*, *> -> {
+                    val baseDb = parent.queryDbProvider.findInputDb(it as InputQueryKey<P, R>)
+                    InputQueryDbImpl(current, baseDb.cache.fork(), it)
+                }
+                is DerivedQueryKey<*, *> -> {
+                    it as DerivedQueryKey<P, R>
+                    val baseDb = parent.queryDbProvider.findDb(it) as DerivedQueryDb<P, R>
+                    val query = queryRegistry.getDerivedQuery(it, this)
+                    DerivedQueryDbImpl(lock, query, baseDb.cache.fork(), current, this)
                 }
             }
 

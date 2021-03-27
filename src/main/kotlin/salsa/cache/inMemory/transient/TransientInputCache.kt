@@ -13,4 +13,8 @@ class TransientInputCache<P, R>(private val mainCache: InputCache<P, R>) : Input
     override fun load(params: P): MemoizedInput<R> {
         return transientCache[params] ?: mainCache.load(params)
     }
+
+    override fun fork(): InputCache<P, R> {
+        throw NotImplementedError()
+    }
 }

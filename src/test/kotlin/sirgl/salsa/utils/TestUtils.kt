@@ -15,8 +15,6 @@ val intIntKey = InputQueryKey<Int, Int>("test.int.int")
 fun defaultContext() = DbContextImpl(object : DbBranchStorage {})
 
 fun defaultParams() = BranchParams(
-    isDurable = false,
-    isLinear = true,
     name = "main"
 )
 

@@ -58,6 +58,10 @@ class TransientDerivedCache<P, R>(private val baseCache: DerivedCache<P, R>) : D
             }
         }
     }
+
+    override fun fork(): DerivedCache<P, R> {
+        throw NotImplementedError()
+    }
 }
 
 // accessed under the lock
