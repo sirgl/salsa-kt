@@ -1,23 +1,26 @@
 package salsa.cache.inMemory.linear
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import kotlinx.coroutines.sync.Mutex
 import salsa.DbRevision
 import salsa.ResultDataImpl
 import salsa.cache.DerivedCache
 import salsa.cache.ResultData
 import salsa.cache.ResultSlot
-import java.util.concurrent.ConcurrentHashMap
 
 // TODO result slot type parameter
 class InMemoryDerivedLinearCache<P, R> : DerivedCache<P, R> {
-    private val storage = ConcurrentHashMap<P, ResultSlot<R>>()
+    private val storage : Cache<P, ResultSlot<R>> = Caffeine.newBuilder()
+        .maximumSize(1000)
+        .build()
 
     override fun get(key: P): ResultSlot<R>? {
-        return storage[key]
+        return storage.getIfPresent(key)
     }
 
     override fun getOrStoreEmpty(parameters: P): ResultSlot<R> {
-        return storage.computeIfAbsent(parameters, { ResultSlotImpl(dataGuard = Mutex(false), data = null) })
+        return storage.get(parameters, { ResultSlotImpl(dataGuard = Mutex(false), data = null) })
     }
 
     override fun updateSlotData(slot: ResultSlot<R>, newData: ResultData<R>) {
